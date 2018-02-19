@@ -106,7 +106,7 @@ def process_course(course):
     course_num = course.select_one(".coursenum")
 
     # Split apart the deptnum
-    subject, number = course_num.get_text().split(' ')
+    department, number = course_num.get_text().strip().split(' ')
 
     # Finds title attribute within each course
     # Only takes the actual name of the course, which is next to the coursenum attribute
@@ -200,7 +200,7 @@ def process_course(course):
     return {
         'id': f'{subject} {number}',
         'title': title,
-        'subject': subject,
+        'department': department,
         'number': number,
         'instructors': instructors,
         'summary': summary,
