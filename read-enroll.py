@@ -217,13 +217,27 @@ def process_course(course):
     }
 
 
+def clean_html(html):
+    # Clean up the returned HTML to optimize storage size
+    soup = BeautifulSoup(html, 'html5lib')
+
+    # only save the enroll data
+    soup = soup.select_one('#enrollModule')
+    # remove the "my courses" block
+    soup.select_one('#myCourses').decompose()
+    # remove the search form at the bottom
+    soup.select_one('#disco_form').decompose()
+
+    return str(soup)
+
+
 def fetch_subject_for_term(*, term, subject):
     html_string = f'https://apps.carleton.edu/campus/registrar/schedule/enroll/?term={term}&subject={subject}'
 
     # Course listings for subject during term provided
     html = requests.get(html_string).text
 
-    return html
+    return clean_html(html)
 
 
 def extract_courses(*, html):
@@ -277,24 +291,14 @@ def cmd_fetch(*, args, root):
                 print(f'{ident} page is {len(data)} bytes')
 
 
-def clean_and_save(*, in_path: Path, out_path: Path):
-    with open(in_path, 'r') as infile:
+def clean_and_save(*, path: Path):
+    with open(path, 'r') as infile:
         html = infile.read()
 
-    soup = BeautifulSoup(html, 'html5lib')
+    cleaned = clean_html(html)
 
-    # only save the enroll data
-    soup = soup.select_one('#enrollModule')
-    # remove the "my courses" block
-    soup.select_one('#myCourses').decompose()
-    # remove the search form at the bottom
-    soup.select_one('#disco_form').decompose()
-
-    stringified = str(soup)
-
-    out_path.parent.mkdir(parents=True, exist_ok=True)
-    with open(out_path, 'w') as outfile:
-        outfile.write(stringified)
+    with open(path, 'w') as outfile:
+        outfile.write(cleaned)
 
 
 def cmd_clean(*, args, root):
@@ -303,12 +307,8 @@ def cmd_clean(*, args, root):
     with ProcessPoolExecutor(max_workers=cpu_count()) as executor:
         futures = {}
         for subject_dir in [d for d in index_dir.glob('*/*') if d.is_dir()]:
-            in_path = subject_dir / '_index.html'
-
-            out_path = root / 'indices_cleaned_4' / subject_dir.parent.name / subject_dir.name / '_index.html'
-
-            key = executor.submit(clean_and_save, in_path=in_path, out_path=out_path)
-
+            path = subject_dir / '_index.html'
+            key = executor.submit(clean_and_save, path=path)
             futures[key] = f'{subject_dir.parent.name}/{subject_dir.name}'
 
         for future in as_completed(futures):
