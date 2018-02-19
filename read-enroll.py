@@ -257,17 +257,15 @@ def fetch_and_save(*, term, subject, root, delay):
 
 def cmd_fetch(*, args, root):
     with ThreadPoolExecutor(max_workers=1) as executor:
-        def runner(term, subject):
-            return executor.submit(fetch_and_save,
-                                   term=term,
-                                   subject=subject,
-                                   root=root,
-                                   delay=args.delay)
+        futures = {}
+        for term, subject in itertools.product(args.terms, args.subjects)
+            key = executor.submit(fetch_and_save,
+                                  term=term,
+                                  subject=subject,
+                                  root=root,
+                                  delay=args.delay)
 
-        futures = {
-            runner(term=term, subject=subject): f'{term}/{subject}'
-            for term, subject in itertools.product(args.terms, args.subjects)
-        }
+            futures[key] = f'{term}/{subject}'
 
         for future in as_completed(futures):
             ident = futures[future]
@@ -297,33 +295,31 @@ def cmd_extract(*, args, root):
     files_dir = root / 'courses'
 
     with ProcessPoolExecutor(max_workers=8) as executor:
-        def runner(subject_dir: Path):
+        futures = {}
+        for subject_dir in [d for d in index_dir.glob('*/*') if d.is_dir()]:
             html_file = subject_dir / '_index.html'
 
             out_dir = files_dir / subject_dir.parent.name / subject_dir.name
             out_dir.mkdir(parents=True, exist_ok=True)
 
-            return executor.submit(extract_and_save,
-                                   html_file=html_file,
-                                   term=subject_dir.parent.name,
-                                   subject=subject_dir.name,
-                                   out_dir=out_dir)
+            key = executor.submit(extract_and_save,
+                                  html_file=html_file,
+                                  term=subject_dir.parent.name,
+                                  subject=subject_dir.name,
+                                  out_dir=out_dir)
 
-        futures = {
-            runner(subject_dir=subject_dir): f'{subject_dir}'
-            for subject_dir in index_dir.glob('*/*')
-        }
+            futures[key] = str(subject_dir.parent.name / subject_dir.name)
 
         for future in as_completed(futures):
             ident = futures[future]
 
             # noinspection PyBroadException
             try:
-                data = future.result()
+                future.result()
             except Exception as e:
                 print(f'{ident} generated an exception: {e}')
             else:
-                print(f'{ident} page is {len(data)} bytes')
+                print(f'completed {ident}')
 
 
 def cmd_bundle(*, args, root):
