@@ -292,6 +292,7 @@ def clean_and_save(*, in_path: Path, out_path: Path):
 
     stringified = str(soup)
 
+    out_path.parent.mkdir(parents=True, exist_ok=True)
     with open(out_path, 'w') as outfile:
         outfile.write(stringified)
 
@@ -305,11 +306,8 @@ def cmd_clean(*, args, root):
             in_path = subject_dir / '_index.html'
 
             out_path = root / 'indices_cleaned_4' / subject_dir.parent.name / subject_dir.name / '_index.html'
-            out_path.parent.mkdir(parents=True, exist_ok=True)
 
-            key = executor.submit(clean_and_save,
-                                  in_path=in_path,
-                                  out_path=out_path)
+            key = executor.submit(clean_and_save, in_path=in_path, out_path=out_path)
 
             futures[key] = f'{subject_dir.parent.name}/{subject_dir.name}'
 
@@ -325,9 +323,11 @@ def cmd_clean(*, args, root):
                 print(f'completed {ident}')
 
 
-def extract_and_save(*, html_file: Path, out_dir: Path, term: str, subject: str):
+def extract_and_save(*, html_file: Path, out_dir: Path):
     with open(html_file, 'r') as infile:
         html = infile.read()
+
+    out_dir.mkdir(parents=True, exist_ok=True)
 
     for course in extract_courses(html=html):
         with open(out_dir / f'{course["id"]}.json', 'w') as outfile:
@@ -336,7 +336,7 @@ def extract_and_save(*, html_file: Path, out_dir: Path, term: str, subject: str)
 
 
 def cmd_extract(*, args, root):
-    index_dir = root / 'indices'
+    index_dir = root / 'indices_cleaned_3'
     files_dir = root / 'courses'
 
     with ProcessPoolExecutor(max_workers=cpu_count()) as executor:
@@ -345,13 +345,8 @@ def cmd_extract(*, args, root):
             html_file = subject_dir / '_index.html'
 
             out_dir = files_dir / subject_dir.parent.name / subject_dir.name
-            out_dir.mkdir(parents=True, exist_ok=True)
 
-            key = executor.submit(extract_and_save,
-                                  html_file=html_file,
-                                  term=subject_dir.parent.name,
-                                  subject=subject_dir.name,
-                                  out_dir=out_dir)
+            key = executor.submit(extract_and_save, html_file=html_file, out_dir=out_dir)
 
             futures[key] = f'{subject_dir.parent.name}/{subject_dir.name}'
 
