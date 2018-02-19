@@ -58,7 +58,7 @@ def get_subjects():
     # print subj_list
 
     # Each item in subj_list is currently in the form: 'Computer Science (CS)'
-    # We only want the abbrevation in the parentheses so that we can use this in the html link
+    # We only want the abbreviation in the parentheses so that we can use this in the html link
     # We use regular expressions to achieve this.
     subj_abbrev = []
     for i in subj_list:
