@@ -8,6 +8,7 @@ from collections import defaultdict
 from bs4 import BeautifulSoup
 import requests
 import re
+import os
 import json
 
 
@@ -143,8 +144,9 @@ def specific_course_info(term):
 
                 course_info['course_info'].append(specific_info)
 
-    with open('course_data.json', 'w') as fp:
-        json.dump(course_info, fp)
+    os.makedirs('./data', exist_ok=True)
+    with open('data/%s.json' % term, 'w') as outfile:
+        json.dump(course_info, outfile)
 
     return course_info
 
