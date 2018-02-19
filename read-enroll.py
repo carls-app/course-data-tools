@@ -103,7 +103,6 @@ def fetch_subjects():
 
 def process_course(course):
     course_num = course.select_one(".coursenum")
-    course_id = course_num.get('title')
 
     # Split apart the deptnum
     subject, number = course_num.get_text().split(' ')
@@ -258,7 +257,7 @@ def fetch_and_save(*, term, subject, root, delay):
 def cmd_fetch(*, args, root):
     with ThreadPoolExecutor(max_workers=1) as executor:
         futures = {}
-        for term, subject in itertools.product(args.terms, args.subjects)
+        for term, subject in itertools.product(args.terms, args.subjects):
             key = executor.submit(fetch_and_save,
                                   term=term,
                                   subject=subject,
