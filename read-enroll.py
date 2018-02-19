@@ -336,7 +336,7 @@ def extract_and_save(*, html_file: Path, out_dir: Path):
 
 
 def cmd_extract(*, args, root):
-    index_dir = root / 'indices_cleaned_3'
+    index_dir = root / 'indices'
     files_dir = root / 'courses'
 
     with ProcessPoolExecutor(max_workers=cpu_count()) as executor:
