@@ -223,12 +223,16 @@ def clean_html(html):
 
     # only save the enroll data
     soup = soup.select_one('#enrollModule')
-    # remove the "my courses" block
-    soup.select_one('#myCourses').decompose()
-    # remove the search form at the bottom
-    soup.select_one('#disco_form').decompose()
 
-    return str(soup)
+    # remove the "my courses" block
+    if soup.select_one('#myCourses'):
+        soup.select_one('#myCourses').decompose()
+
+    # remove the search form at the bottom
+    if soup.select_one('#disco_form'):
+        soup.select_one('#disco_form').decompose()
+
+    return soup.prettify()
 
 
 def fetch_subject_for_term(*, term, subject):
