@@ -7,6 +7,7 @@ from bs4 import BeautifulSoup
 from argparse import ArgumentParser
 from urllib.parse import parse_qs
 from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor, as_completed
+from multiprocessing import cpu_count
 import itertools
 import requests
 import re
@@ -293,7 +294,7 @@ def cmd_extract(*, args, root):
     index_dir = root / 'indices'
     files_dir = root / 'courses'
 
-    with ProcessPoolExecutor(max_workers=8) as executor:
+    with ProcessPoolExecutor(max_workers=cpu_count()) as executor:
         futures = {}
         for subject_dir in [d for d in index_dir.glob('*/*') if d.is_dir()]:
             html_file = subject_dir / '_index.html'
