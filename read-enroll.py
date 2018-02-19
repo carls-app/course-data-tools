@@ -237,6 +237,67 @@ def extract_courses(*, html):
         yield process_course(course)
 
 
+def cmd_fetch(*, args, root):
+    for term in args.terms:
+        for subject in args.subjects:
+            print(f'fetching term "{term}", subject "{subject}"', file=sys.stderr)
+
+            folder = root / 'indices' / term / subject
+            folder.mkdir(parents=True, exist_ok=True)
+
+            html = fetch_subject_for_term(term=term, subject=subject)
+            with open(folder / '_index.html', 'w') as outfile:
+                outfile.write(html)
+                outfile.write('\n')
+
+            time.sleep(args.delay)
+
+
+def cmd_extract(*, args, root):
+    index_dir = root / 'indices'
+    files_dir = root / 'courses'
+    for term in [d for d in index_dir.glob('*') if d.is_dir()]:
+        for subject in [d for d in term.glob('*') if d.is_dir()]:
+            print(f'extracting term "{term.name}", subject "{subject.name}"', file=sys.stderr)
+            with open(subject / '_index.html', 'r') as infile:
+                html = infile.read()
+
+            out_dir = files_dir / term.name / subject.name
+            out_dir.mkdir(parents=True, exist_ok=True)
+
+            for course in extract_courses(html=html):
+                with open(out_dir / f'{course["id"]}.json', 'w') as outfile:
+                    json.dump(course, outfile, indent='\t', sort_keys=True)
+                    outfile.write('\n')
+
+
+def cmd_bundle(*, args, root):
+    terms = {}
+
+    files_dir = root / 'courses'
+    for term in [d for d in files_dir.glob('*') if d.is_dir()]:
+        subjects = {}
+
+        for subject in [d for d in term.glob('*') if d.is_dir()]:
+            print(f'bundling term "{term.name}", subject "{subject.name}"', file=sys.stderr)
+
+            filenames = [file for file in subject.glob('*.json')]
+
+            courses = []
+            for file in filenames:
+                with open(file, 'r') as infile:
+                    courses.append(json.load(infile))
+
+            subjects[subject.name] = courses
+
+        terms[term.name] = subjects
+
+    with open(root / 'all.json', 'w') as outfile:
+        print(f'saving all-term bundle')
+        json.dump(terms, outfile, indent='\t', sort_keys=True)
+        outfile.write('\n')
+
+
 def main():
     parser = ArgumentParser()
     parser.add_argument('command', action='store', choices=['fetch', 'extract', 'bundle'],
@@ -280,60 +341,11 @@ def main():
     root = Path(args.dest) if args.dest else Path('..') / 'course-data'
 
     if args.command == 'fetch':
-        for term in args.terms:
-            for subject in args.subjects:
-                print(f'fetching term "{term}", subject "{subject}"', file=sys.stderr)
-
-                folder = root / 'indices' / term / subject
-                folder.mkdir(parents=True, exist_ok=True)
-
-                html = fetch_subject_for_term(term=term, subject=subject)
-                with open(folder / '_index.html', 'w') as outfile:
-                    outfile.write(html)
-                    outfile.write('\n')
-
-                time.sleep(args.delay)
+        cmd_fetch(args=args, root=root)
     elif args.command == 'extract':
-        index_dir = root / 'indices'
-        files_dir = root / 'courses'
-        for term in [d for d in index_dir.glob('*') if d.is_dir()]:
-            for subject in [d for d in term.glob('*') if d.is_dir()]:
-                print(f'extracting term "{term.name}", subject "{subject.name}"', file=sys.stderr)
-                with open(subject / '_index.html', 'r') as infile:
-                    html = infile.read()
-
-                out_dir = files_dir / term.name / subject.name
-                out_dir.mkdir(parents=True, exist_ok=True)
-
-                for course in extract_courses(html=html):
-                    with open(out_dir / f'{course["id"]}.json', 'w') as outfile:
-                        json.dump(course, outfile, indent='\t', sort_keys=True)
-                        outfile.write('\n')
+        cmd_extract(args=args, root=root)
     elif args.command == 'bundle':
-        terms = {}
-
-        files_dir = root / 'courses'
-        for term in [d for d in files_dir.glob('*') if d.is_dir()]:
-            subjects = {}
-
-            for subject in [d for d in term.glob('*') if d.is_dir()]:
-                print(f'bundling term "{term.name}", subject "{subject.name}"', file=sys.stderr)
-
-                filenames = [file for file in subject.glob('*.json')]
-
-                courses = []
-                for file in filenames:
-                    with open(file, 'r') as infile:
-                        courses.append(json.load(infile))
-
-                subjects[subject.name] = courses
-
-            terms[term.name] = subjects
-
-        with open(root / 'all.json', 'w') as outfile:
-            print(f'saving all-term bundle')
-            json.dump(terms, outfile, indent='\t', sort_keys=True)
-            outfile.write('\n')
+        cmd_bundle(args=args, root=root)
 
 
 if __name__ == '__main__':
