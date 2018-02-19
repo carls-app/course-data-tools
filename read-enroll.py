@@ -9,10 +9,11 @@ from bs4 import BeautifulSoup
 import requests
 import re
 import os
+import time
 import json
 
 
-def academic_term():
+def academic_terms():
     """ Returns list of academic terms that user can choose from. Item in list
     will be passed to function that returns html link with term info provided.
     Example: 'term=18WI' in 'https://apps.carleton.edu/campus/registrar/schedule/enroll/?term=18WI&subject=CS'
@@ -69,17 +70,15 @@ def get_subjects():
     return subj_abbrev
 
 
-def specific_course_info(term):
+def fetch_term_info(term):
     """ Returns dict object with course number, course name, and start/end times for each course
     Finds course info based on the academic term and subject chosen (in this case, Winter 2018)
     """
     # Creates dict object with course number as key and list containing name and times for course as values
     course_info = defaultdict(list)
 
-    subjects = get_subjects()
-
-    for subject in subjects:
-        html_string = 'https://apps.carleton.edu/campus/registrar/schedule/enroll/?term=' + term + '&subject=' + subject
+    for subject in get_subjects():
+        html_string = 'https://apps.carleton.edu/campus/registrar/schedule/enroll/?term=%s&subject=%s' % (term, subject)
 
         # Course listings for subject during term provided
         print('fetching term "%s", subject "%s"' % (term, subject))
@@ -145,38 +144,26 @@ def specific_course_info(term):
 
                 course_info['course_info'].append(specific_info)
 
-    os.makedirs('./data', exist_ok=True)
-    with open('data/%s.json' % term, 'w') as outfile:
-        json.dump(course_info, outfile)
+        time.sleep(1)
 
     return course_info
 
 
-# def append_dicts(a_dict, b_dict):
-# ''' Adds lists together from Specific_Course_Info so that each csv file will contain info 
-# for ALL subjects in one term
-# ''' 
-# 	return
-
-
-def generate_html():
+def fetch_all_terms():
     """ Returns HTML string that Specific Course Info will use to provide information
     for every term and subject combination.
     """
-    terms = academic_term()[1:3]
-    subjects = get_subjects()[1:3]
+    terms = academic_terms()
     for term in terms:
-        for subject in subjects:
-            print(term)
-            print(subject)
-            specific_course_info(term, subject)
+        course_info = fetch_term_info(term)
+        with open('data/%s.json' % term, 'w') as outfile:
+            json.dump(course_info, outfile)
 
 
 def main():
-    # Academic_Term()
-    # Subject()
-    # Generate_HTML()
-    specific_course_info('18WI')
+    # print(academic_terms())
+    fetch_all_terms()
+    # fetch_term_info('18WI')
 
 
 main()
