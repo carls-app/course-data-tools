@@ -307,7 +307,7 @@ def cmd_extract(*, args, root):
                                   subject=subject_dir.name,
                                   out_dir=out_dir)
 
-            futures[key] = str(subject_dir.parent.name / subject_dir.name)
+            futures[key] = f'{subject_dir.parent.name}/{subject_dir.name}'
 
         for future in as_completed(futures):
             ident = futures[future]
