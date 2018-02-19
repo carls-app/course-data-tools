@@ -232,7 +232,7 @@ def extract_courses(*, html):
     soup = BeautifulSoup(html, 'html5lib')
 
     # Creates list of all items with course as class attribute, excluding related courses
-    exact_courses = soup.select('#enrollModule h3 ~ .courses .course')
+    exact_courses = soup.select('#enrollModule .courses:first-of-type .course')
     for course in exact_courses:
         # print(course)
         yield process_course(course)
