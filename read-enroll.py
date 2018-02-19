@@ -75,7 +75,7 @@ def fetch_term_info(term):
     Finds course info based on the academic term and subject chosen (in this case, Winter 2018)
     """
     # Creates dict object with course number as key and list containing name and times for course as values
-    course_info = defaultdict(list)
+    course_info = []
 
     for subject in get_subjects():
         html_string = 'https://apps.carleton.edu/campus/registrar/schedule/enroll/?term=%s&subject=%s' % (term, subject)
@@ -142,7 +142,7 @@ def fetch_term_info(term):
                     specific_info['start_time'] = "n/a"
                     specific_info['end_time'] = "n/a"
 
-                course_info['course_info'].append(specific_info)
+                course_info.append(specific_info)
 
         time.sleep(1)
 
