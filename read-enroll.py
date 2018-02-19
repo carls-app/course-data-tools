@@ -6,6 +6,8 @@
 from bs4 import BeautifulSoup
 from argparse import ArgumentParser
 from urllib.parse import parse_qs
+from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor, as_completed
+import itertools
 import requests
 import re
 import sys
@@ -237,38 +239,91 @@ def extract_courses(*, html):
         yield process_course(course)
 
 
+def fetch_and_save(*, term, subject, root, delay):
+    print(f'fetching term "{term}", subject "{subject}"', file=sys.stderr)
+
+    folder = root / 'indices' / term / subject
+    folder.mkdir(parents=True, exist_ok=True)
+
+    html = fetch_subject_for_term(term=term, subject=subject)
+    with open(folder / '_index.html', 'w') as outfile:
+        outfile.write(html)
+        outfile.write('\n')
+
+    time.sleep(delay)
+
+    return html
+
+
 def cmd_fetch(*, args, root):
-    for term in args.terms:
-        for subject in args.subjects:
-            print(f'fetching term "{term}", subject "{subject}"', file=sys.stderr)
+    with ThreadPoolExecutor(max_workers=1) as executor:
+        def runner(term, subject):
+            return executor.submit(fetch_and_save,
+                                   term=term,
+                                   subject=subject,
+                                   root=root,
+                                   delay=args.delay)
 
-            folder = root / 'indices' / term / subject
-            folder.mkdir(parents=True, exist_ok=True)
+        futures = {
+            runner(term=term, subject=subject): f'{term}/{subject}'
+            for term, subject in itertools.product(args.terms, args.subjects)
+        }
 
-            html = fetch_subject_for_term(term=term, subject=subject)
-            with open(folder / '_index.html', 'w') as outfile:
-                outfile.write(html)
-                outfile.write('\n')
+        for future in as_completed(futures):
+            ident = futures[future]
 
-            time.sleep(args.delay)
+            # noinspection PyBroadException
+            try:
+                data = future.result()
+            except Exception as e:
+                print(f'{ident} generated an exception: {e}')
+            else:
+                print(f'{ident} page is {len(data)} bytes')
+
+
+def extract_and_save(*, html_file: Path, out_dir: Path, term: str, subject: str):
+    print(f'extracting term "{term}", subject "{subject}"', file=sys.stderr)
+    with open(html_file, 'r') as infile:
+        html = infile.read()
+
+    for course in extract_courses(html=html):
+        with open(out_dir / f'{course["id"]}.json', 'w') as outfile:
+            json.dump(course, outfile, indent='\t', sort_keys=True)
+            outfile.write('\n')
 
 
 def cmd_extract(*, args, root):
     index_dir = root / 'indices'
     files_dir = root / 'courses'
-    for term in [d for d in index_dir.glob('*') if d.is_dir()]:
-        for subject in [d for d in term.glob('*') if d.is_dir()]:
-            print(f'extracting term "{term.name}", subject "{subject.name}"', file=sys.stderr)
-            with open(subject / '_index.html', 'r') as infile:
-                html = infile.read()
 
-            out_dir = files_dir / term.name / subject.name
+    with ProcessPoolExecutor(max_workers=8) as executor:
+        def runner(subject_dir: Path):
+            html_file = subject_dir / '_index.html'
+
+            out_dir = files_dir / subject_dir.parent.name / subject_dir.name
             out_dir.mkdir(parents=True, exist_ok=True)
 
-            for course in extract_courses(html=html):
-                with open(out_dir / f'{course["id"]}.json', 'w') as outfile:
-                    json.dump(course, outfile, indent='\t', sort_keys=True)
-                    outfile.write('\n')
+            return executor.submit(extract_and_save,
+                                   html_file=html_file,
+                                   term=subject_dir.parent.name,
+                                   subject=subject_dir.name,
+                                   out_dir=out_dir)
+
+        futures = {
+            runner(subject_dir=subject_dir): f'{subject_dir}'
+            for subject_dir in index_dir.glob('*/*')
+        }
+
+        for future in as_completed(futures):
+            ident = futures[future]
+
+            # noinspection PyBroadException
+            try:
+                data = future.result()
+            except Exception as e:
+                print(f'{ident} generated an exception: {e}')
+            else:
+                print(f'{ident} page is {len(data)} bytes')
 
 
 def cmd_bundle(*, args, root):
