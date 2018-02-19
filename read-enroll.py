@@ -82,6 +82,7 @@ def specific_course_info(term):
         html_string = 'https://apps.carleton.edu/campus/registrar/schedule/enroll/?term=' + term + '&subject=' + subject
 
         # Course listings for subject during term provided
+        print('fetching term "%s", subject "%s"' % (term, subject))
         html = requests.get(html_string).text
 
         soup = BeautifulSoup(html, 'html5lib')
