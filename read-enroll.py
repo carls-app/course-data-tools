@@ -344,7 +344,13 @@ def cmd_extract(*, args, root):
         for subject_dir in [d for d in index_dir.glob('*/*') if d.is_dir()]:
             html_file = subject_dir / '_index.html'
 
-            out_dir = files_dir / subject_dir.parent.name / subject_dir.name
+            term = subject_dir.parent.name
+            subject = subject_dir.name
+
+            if term not in args.terms:
+                continue
+
+            out_dir = files_dir / term / subject
 
             key = executor.submit(extract_and_save, html_file=html_file, out_dir=out_dir)
 
