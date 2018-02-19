@@ -115,28 +115,30 @@ def process_course(course):
 
     # Find the teachers
     if course.select(".faculty"):
-        instructors = [inst.get_text().strip() for inst in course.select(".faculty a")]
+        instructors = [' '.join(inst.get_text().strip().split()) for inst in course.select(".faculty a")]
     else:
         instructors = []
 
     # Get the course summary, if possible
     if course.select_one(".faculty") and course.select_one(".faculty").next_sibling:
-        summary = str(course.select_one(".faculty").next_sibling)
+        summary = str(course.select_one(".faculty").next_sibling).strip()
     elif course.select_one('.prereq') and course.select_one('.prereq').previous_sibling:
-        summary = str(course.select_one('.prereq').previous_sibling)
+        summary = str(course.select_one('.prereq').previous_sibling).strip()
     elif course.select_one('.description'):
-        summary = str(course.select_one('.description'))
+        summary = course.select_one('.description').get_text().strip()
     else:
+        summary = None
+    if not summary:
         summary = None
 
     # Pull out the prereqs
-    prereq = str(course.select_one('.prereq')) or None
+    prereq = str(course.select_one('.prereq')).strip() or None
 
     # and the comments
-    comments = str(course.select_one('.comments')) or None
+    comments = [el.get_text().strip() for el in course.select('.comments')]
 
     # Extract the course status
-    status = course.select_one('.statusName').get_text()
+    status = course.select_one('.statusName').get_text().strip().strip(':')
 
     if course.select_one(".statusName").next_sibling:
         status_text = str(course.select_one(".statusName").next_sibling).strip()
@@ -148,23 +150,33 @@ def process_course(course):
         size = None
 
     if course.select_one('.codes.gov_codes'):
-        tags = [{'name': code.get_text(), 'code': parse_qs(code.get('href')).get('other_code[]', None)}
-                for code in course.select('.codes.gov_codes a')]
+        tags = [{
+            'name': code.get_text().strip(),
+            'code': parse_qs(code.get('href')).get('other_code[]', []),
+        } for code in course.select('.codes.gov_codes a')]
+        tags = [{**tag, 'code': tag['code'][0] if len(tag['code']) else None}
+                for tag in tags]
     else:
         tags = []
 
     if course.select_one('.codes.overlays'):
-        requirements = [{'name': code.get_text(), 'code': parse_qs(code.get('href')).get('requirements[]', None)}
-                        for code in course.select('.codes.overlays a')]
+        requirements = [{
+            'name': code.get_text().strip(),
+            'code': parse_qs(code.get('href')).get('requirements[]', []),
+        } for code in course.select('.codes.overlays a')]
+        requirements = [{**req, 'code': req['code'][0] if len(req['code']) else None}
+                        for req in requirements]
     else:
         requirements = []
 
     if course.select_one('.credits'):
         credits_el = course.select_one('.credits')
-        credit_count = float(re.search(r'^([\d.])+', credits_el.get_text()).group(1))
+        credit_count = float(re.search(r'([\d.])+', credits_el.get_text()).group(1))
 
         if credits_el.select_one('abbr'):
-            scnc = credits_el.select_one('abbr').get_text()
+            scnc = credits_el.select_one('abbr').get_text().strip()
+            assert scnc == 'S/CR/NC'
+            scnc = True if scnc == 'S/CR/NC' else None
         else:
             scnc = None
     else:
@@ -182,23 +194,25 @@ def process_course(course):
         # Account for classes without set times
         schedule = course.select_one('.schedule')
 
-        # locations = course.select('.locations a')
+        locations = course.select('.locations a')
 
-        # offerings = []
-        # times = {0: [], 1: [], 2: [], 3: [], 4: []}
-        # for tr in schedule.select('tr')[1:]:
-        #     for i, td in enumerate(tr.select('td')):
-        #         times[i].append({
-        #             'start': td.select_one('.start').get_text() if td.select_one('.start') else None,
-        #             'end': td.select_one('.end').get_text()if td.select_one('.end') else None,
-        #         })
+        offerings = []
+        # active_days = {i: tag['class'] == 'used' for i, tag in enumerate(schedule.select('th'))}
+        # print(active_days)
+        times = {0: [], 1: [], 2: [], 3: [], 4: []}
+        for tr in schedule.select('tr')[1:]:
+            for i, td in enumerate(tr.select('td')):
+                times[i].append({
+                    'start': td.select_one('.start').get_text().strip() if td.select_one('.start') else None,
+                    'end': td.select_one('.end').get_text().strip() if td.select_one('.end') else None,
+                })
 
-        offerings = str(schedule.parent)
+        offerings = times
     else:
         offerings = ''
 
     return {
-        'id': f'{subject} {number}',
+        'id': f'{department} {number}',
         'title': title,
         'department': department,
         'number': number,
