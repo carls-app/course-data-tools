@@ -240,8 +240,6 @@ def extract_courses(*, html):
 
 
 def fetch_and_save(*, term, subject, root, delay):
-    print(f'fetching term "{term}", subject "{subject}"', file=sys.stderr)
-
     folder = root / 'indices' / term / subject
     folder.mkdir(parents=True, exist_ok=True)
 
@@ -279,8 +277,55 @@ def cmd_fetch(*, args, root):
                 print(f'{ident} page is {len(data)} bytes')
 
 
+def clean_and_save(*, in_path: Path, out_path: Path):
+    with open(in_path, 'r') as infile:
+        html = infile.read()
+
+    soup = BeautifulSoup(html, 'html5lib')
+
+    # only save the enroll data
+    soup = soup.select_one('#enrollModule')
+    # remove the "my courses" block
+    soup.select_one('#myCourses').decompose()
+    # remove the search form at the bottom
+    soup.select_one('#disco_form').decompose()
+
+    stringified = str(soup)
+
+    with open(out_path, 'w') as outfile:
+        outfile.write(stringified)
+
+
+def cmd_clean(*, args, root):
+    index_dir = root / 'indices'
+
+    with ProcessPoolExecutor(max_workers=cpu_count()) as executor:
+        futures = {}
+        for subject_dir in [d for d in index_dir.glob('*/*') if d.is_dir()]:
+            in_path = subject_dir / '_index.html'
+
+            out_path = root / 'indices_cleaned_4' / subject_dir.parent.name / subject_dir.name / '_index.html'
+            out_path.parent.mkdir(parents=True, exist_ok=True)
+
+            key = executor.submit(clean_and_save,
+                                  in_path=in_path,
+                                  out_path=out_path)
+
+            futures[key] = f'{subject_dir.parent.name}/{subject_dir.name}'
+
+        for future in as_completed(futures):
+            ident = futures[future]
+
+            # noinspection PyBroadException
+            try:
+                future.result()
+            except Exception as e:
+                print(f'{ident} generated an exception: {e}')
+            else:
+                print(f'completed {ident}')
+
+
 def extract_and_save(*, html_file: Path, out_dir: Path, term: str, subject: str):
-    print(f'extracting term "{term}", subject "{subject}"', file=sys.stderr)
     with open(html_file, 'r') as infile:
         html = infile.read()
 
@@ -351,7 +396,7 @@ def cmd_bundle(*, args, root):
 
 def main():
     parser = ArgumentParser()
-    parser.add_argument('command', action='store', choices=['fetch', 'extract', 'bundle'],
+    parser.add_argument('command', action='store', choices=['fetch', 'clean', 'extract', 'bundle'],
                         help='Which command to execute')
     parser.add_argument('terms', action='store', nargs='*', metavar='TERM',
                         help='A term, like 18WI or 15SP')
@@ -393,6 +438,8 @@ def main():
 
     if args.command == 'fetch':
         cmd_fetch(args=args, root=root)
+    if args.command == 'clean':
+        cmd_clean(args=args, root=root)
     elif args.command == 'extract':
         cmd_extract(args=args, root=root)
     elif args.command == 'bundle':
