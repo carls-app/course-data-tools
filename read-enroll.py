@@ -96,6 +96,7 @@ def fetch_term_info(term):
 
             # Only takes the actual name of the course, which is next to the coursenum attribute
             # but not within its own tag
+            course_name = 'n/a'
             for _ in title:
                 course_name = course.find(class_="coursenum").next_sibling
 
@@ -106,7 +107,7 @@ def fetch_term_info(term):
             specific_info = {}
             if course_num.find(subject) > -1:
                 specific_info['course_num'] = course_num
-                specific_info['title'] = course_name
+                specific_info['title'] = course_name.strip()
                 if course.find(class_="faculty") is not None:
                     faculty = course.find(class_="faculty").get_text()
                     specific_info['faculty'] = faculty
