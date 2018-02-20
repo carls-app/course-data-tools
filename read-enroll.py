@@ -194,22 +194,35 @@ def process_course(course):
         # Account for classes without set times
         schedule = course.select_one('.schedule')
 
-        locations = course.select('.locations a')
+        locations = [a.get_text().strip() for a in course.select('.locations a')]
 
-        offerings = []
-        # active_days = {i: tag['class'] == 'used' for i, tag in enumerate(schedule.select('th'))}
-        # print(active_days)
-        times = {0: [], 1: [], 2: [], 3: [], 4: []}
+        # there is at least one course that occurs on Saturday
+        days = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa']
+        times = []
         for tr in schedule.select('tr')[1:]:
             for i, td in enumerate(tr.select('td')):
-                times[i].append({
-                    'start': td.select_one('.start').get_text().strip() if td.select_one('.start') else None,
-                    'end': td.select_one('.end').get_text().strip() if td.select_one('.end') else None,
+                if len(td.select('.start')) > 1 or len(td.select('.end')) > 1:
+                    raise Exception('multiple times on the same day!')
+
+                start = td.select_one('.start')
+                end = td.select_one('.end')
+
+                if (start and not end) or (end and not start):
+                    raise Exception('unmatched start/end times!')
+
+                if not start or not end:
+                    continue
+
+                day = days[i]
+                times.append({
+                    'day': day,
+                    'start': start.get_text().strip(),
+                    'end': end.get_text().strip(),
                 })
 
-        offerings = times
+        offerings = {'times': times, 'locations': locations}
     else:
-        offerings = ''
+        offerings = None
 
     return {
         'id': f'{department} {number}',
