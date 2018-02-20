@@ -193,7 +193,7 @@ def process_course(course):
     else:
         synonym = None
 
-    if course.select_one('.schedule'):
+    if course.select_one('.schedule *'):
         # Start and end times for courses that have set times
         # Account for classes without set times
         schedule = course.select_one('.schedule')
