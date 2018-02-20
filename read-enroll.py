@@ -366,7 +366,7 @@ def extract_and_save(*, html_file: Path, out_dir: Path):
 
     for course in extract_courses(html=html):
         with open(out_dir / f'{course["id"]}.json', 'w') as outfile:
-            json.dump(course, outfile, indent='\t', sort_keys=True)
+            json.dump(course, outfile, indent='\t', sort_keys=True, ensure_ascii=False)
             outfile.write('\n')
 
 
