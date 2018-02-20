@@ -378,9 +378,27 @@ def cmd_extract(*, args, root):
     index_dir = root / 'indices'
     files_dir = root / 'courses'
 
+    to_process = [d for d in index_dir.glob('*/*') if d.is_dir()]
+
+    if args.debug:
+        for subject_dir in to_process:
+            html_file = subject_dir / '_index.html'
+
+            term = subject_dir.parent.name
+            subject = subject_dir.name
+            if term not in args.terms:
+                continue
+
+            out_dir = files_dir / term / subject
+
+            print(f'{subject_dir.parent.name}/{subject_dir.name}')
+            extract_and_save(html_file=html_file, out_dir=out_dir)
+
+        return
+
     with ProcessPoolExecutor(max_workers=cpu_count()) as executor:
         futures = {}
-        for subject_dir in [d for d in index_dir.glob('*/*') if d.is_dir()]:
+        for subject_dir in to_process:
             html_file = subject_dir / '_index.html'
 
             term = subject_dir.parent.name
@@ -450,6 +468,8 @@ def main():
                         help='Print the known terms, then exit')
     parser.add_argument('--delay', action='store', type=int, default=1,
                         help='Control the delay between term/subject fetches, in seconds (be nice)')
+    parser.add_argument('--debug', action='store_true',
+                        help='Enables debugging mode')
     parser.add_argument('--first-term', action='store', metavar='TERM',
                         help='Fetch terms from the given term until --last-term')
     parser.add_argument('--last-term', action='store', metavar='TERM',
