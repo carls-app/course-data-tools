@@ -132,7 +132,10 @@ def process_course(course):
         summary = None
 
     # Pull out the prereqs
-    prereq = str(course.select_one('.prereq')).strip() or None
+    if course.select_one('.prereq'):
+        prereq = ' '.join(course.select_one('.prereq').get_text().split()).strip() or None
+    else:
+        prereq = None
 
     # and the comments
     comments = [el.get_text().strip() for el in course.select('.comments')]
