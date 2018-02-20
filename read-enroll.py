@@ -202,6 +202,10 @@ def process_course(course):
 
         # there is at least one course that occurs on Saturday
         days = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa']
+        day_count = len(schedule.select('tr')[0].select('th'))
+        if day_count == 7:
+            days = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa']
+
         times = []
         for tr in schedule.select('tr')[1:]:
             for i, td in enumerate(tr.select('td')):
