@@ -162,7 +162,8 @@ def process_course(course):
     if course.select_one('.codes.overlays'):
         requirements = [{
             'name': code.get_text().strip(),
-            'code': parse_qs(code.get('href')).get('requirements[]', []),
+            'code': parse_qs(code.get('href')).get('requirements[]', [])
+                        or parse_qs(code.get('href')).get('overlays[]', []),
         } for code in course.select('.codes.overlays a')]
         requirements = [{**req, 'code': req['code'][0] if len(req['code']) else None}
                         for req in requirements]
