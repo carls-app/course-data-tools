@@ -1,0 +1,22 @@
+# pick our container
+sudo: false
+dist: trusty
+
+# pick our language/runtime
+language: python
+python: '3.6'
+cache: pip
+
+# install our deps
+install:
+  - pip3 install pipenv
+  - pipenv install
+
+before_script:
+  - git clone --depth=1 https://github.com/carls-app/course-data.git
+  - git config user.name "CARLS Databot"
+  - git config user.email "hawkrives+carls-course-databot@gmail.com"
+
+script: 
+  - bin/fetch.sh
+  - bin/bundle.sh
