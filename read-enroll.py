@@ -267,7 +267,7 @@ def clean_html(html):
     if soup.select_one('#disco_form'):
         soup.select_one('#disco_form').decompose()
 
-    return soup.prettify()
+    return soup.prettify().strip()
 
 
 def fetch_subject_for_term(*, term, subject):
@@ -328,6 +328,7 @@ def clean_and_save(*, path: Path):
 
     with open(path, 'w') as outfile:
         outfile.write(cleaned)
+        outfile.write('\n')
 
 
 def cmd_clean(*, args, root):
