@@ -19,4 +19,4 @@ before_script:
 
 script:
   - pipenv run bin/fetch.sh
-  # - pipenv run bin/bundle.sh
+  - pipenv run bin/bundle.sh
