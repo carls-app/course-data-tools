@@ -267,6 +267,11 @@ def clean_html(html):
     if soup.select_one('#disco_form'):
         soup.select_one('#disco_form').decompose()
 
+    # remove the "search description" at the top
+    # e.g., [Your search for courses for 16/SP and COGSC found 1 course.]
+    if soup.select_one('.searchDescription'):
+        soup.select_one('.searchDescription').decompose()
+
     return soup.prettify().strip()
 
 
