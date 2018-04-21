@@ -95,7 +95,7 @@ def fetch_subjects():
     # We use regular expressions to achieve this.
     subj_abbrev = []
     for i in subj_list:
-        subj_abbrev.append(re.search('\((.*?)\)', i).group(1))
+        subj_abbrev.append(re.search(r'\((.*?)\)', i).group(1))
 
     # print subj_abbrev
 
