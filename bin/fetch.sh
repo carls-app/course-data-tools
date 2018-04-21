@@ -2,14 +2,20 @@
 cd course-data
 
 # update course data files
-for y in $(seq 1999 $(date +%Y)); do
-    for s in WI SP FA; do
-        echo "$y$s"
+# seq -w prints the leading zeros
+# tail -c3 gets us the last "3" chars of the year: 1,8,\n
+function terms() {
+    for y in 99 $(seq -w 00 $(date +%Y | tail -c3)); do
+        for s in WI SP FA; do
+            echo "$y$s"
+        done
+        # -n1 to only pass one argument from stdin to the process
+        # -P3 to run 3 concurrent fetch processes
     done
-    # -n1 to only pass one argument from stdin to the process
-    # -P3 to run 3 concurrent fetch processes
-done | xargs -t -n1 -P3 -- pipenv run ../read-enroll.py fetch
-pipenv run ../read-enroll.py extract
+}
+
+terms | xargs -t -n1 -P3 -- python3 ../read-enroll.py fetch
+terms | xargs -t -n1 -P3 -- python3 ../read-enroll.py extract
 
 git add .
 git commit -m "course data update $(date)" || (echo "No updates found." && exit 0)

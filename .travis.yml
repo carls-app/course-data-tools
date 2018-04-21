@@ -17,6 +17,6 @@ before_script:
   - git config user.name "CARLS Databot"
   - git config user.email "hawkrives+carls-course-databot@gmail.com"
 
-script: 
-  - bin/fetch.sh
-  - bin/bundle.sh
+script:
+  - pipenv run bin/fetch.sh
+  - pipenv run bin/bundle.sh

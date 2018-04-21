@@ -5,7 +5,7 @@ cd course-data
 git checkout -B gh-pages master --no-track
 
 # update bundled information for public consumption
-pipenv run ../read-enroll.py bundle --out-dir ./ --format json --format csv
+python3 ../read-enroll.py bundle --out-dir ./ --format json --format csv
 
 # remove the source files (quietly)
 git rm -rf --quiet details/ raw_xml/
