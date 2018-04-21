@@ -453,13 +453,16 @@ def cmd_bundle(*, args, root):
 
 def main():
     parser = ArgumentParser()
-    parser.add_argument('command', action='store', choices=['fetch', 'clean', 'extract', 'bundle'],
+    parser.add_argument('command', action='store',
+                        choices=['fetch', 'clean', 'extract', 'bundle'],
                         help='Which command to execute')
     parser.add_argument('terms', action='store', nargs='*', metavar='TERM',
                         help='A term, like 18WI or 15SP')
     parser.add_argument('--dest', action='store',
-                        help='The folder to output data files to', default='../course-data')
-    parser.add_argument('--subjects', action='store', type=lambda x: x.split(','),
+                        default='../course-data',
+                        help='The folder to output data files to')
+    parser.add_argument('--subjects', action='store',
+                        type=lambda x: x.split(','),
                         help='If given, only fetch these subjects (e.g., WGST,CS')
     parser.add_argument('--print-subjects', action='store_true',
                         help='Print the known subjects, then exit')
@@ -473,8 +476,8 @@ def main():
                         help='Fetch terms from the given term until --last-term')
     parser.add_argument('--last-term', action='store', metavar='TERM',
                         help='Fetch terms from --first-term until the given term')
-    parser.add_argument('-w', '--workers', action='store',
-                        metavar='N', type=int, default=0,
+    parser.add_argument('-w', '--workers', action='store', metavar='N',
+                        type=int, default=0,
                         help='How many worker processes to use (be nice to Enroll)')
 
     args = parser.parse_args()
