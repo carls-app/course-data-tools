@@ -307,7 +307,7 @@ def fetch_and_save(*, term, subject, root, delay):
 
 
 def cmd_fetch(*, args, root):
-    with ThreadPoolExecutor(max_workers=1) as executor:
+    with ThreadPoolExecutor(max_workers=args.workers) as executor:
         futures = {}
         for term, subject in itertools.product(args.terms, args.subjects):
             key = executor.submit(fetch_and_save,
@@ -343,7 +343,7 @@ def clean_and_save(*, path: Path):
 def cmd_clean(*, args, root):
     index_dir = root / 'indices'
 
-    with ProcessPoolExecutor(max_workers=cpu_count()) as executor:
+    with ProcessPoolExecutor(max_workers=args.workers) as executor:
         futures = {}
         for subject_dir in [d for d in index_dir.glob('*/*') if d.is_dir()]:
             path = subject_dir / '_index.html'
@@ -396,7 +396,7 @@ def cmd_extract(*, args, root):
 
         return
 
-    with ProcessPoolExecutor(max_workers=cpu_count()) as executor:
+    with ProcessPoolExecutor(max_workers=args.workers) as executor:
         futures = {}
         for subject_dir in to_process:
             html_file = subject_dir / '_index.html'
@@ -474,6 +474,9 @@ def main():
                         help='Fetch terms from the given term until --last-term')
     parser.add_argument('--last-term', action='store', metavar='TERM',
                         help='Fetch terms from --first-term until the given term')
+    parser.add_argument('-w', '--workers', action='store',
+                        metavar='N', type=int, default=0,
+                        help='How many worker processes to use (be nice to Enroll)')
 
     args = parser.parse_args()
 
@@ -497,12 +500,20 @@ def main():
     root = Path(args.dest) if args.dest else Path('..') / 'course-data'
 
     if args.command == 'fetch':
+        if args.workers is 0:
+            args.workers = 1
         cmd_fetch(args=args, root=root)
     if args.command == 'clean':
+        if args.workers is 0:
+            args.workers = cpu_count()
         cmd_clean(args=args, root=root)
     elif args.command == 'extract':
+        if args.workers is 0:
+            args.workers = cpu_count()
         cmd_extract(args=args, root=root)
     elif args.command == 'bundle':
+        if args.workers is 0:
+            args.workers = cpu_count()
         cmd_bundle(args=args, root=root)
 
 
