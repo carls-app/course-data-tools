@@ -468,7 +468,8 @@ def main():
                         help='Print the known subjects, then exit')
     parser.add_argument('--print-terms', action='store_true',
                         help='Print the known terms, then exit')
-    parser.add_argument('--delay', action='store', type=int, default=1,
+    parser.add_argument('--delay', action='store',
+                        type=float, default=0.5,
                         help='Control the delay between term/subject fetches, in seconds (be nice)')
     parser.add_argument('--debug', action='store_true',
                         help='Enables debugging mode')
