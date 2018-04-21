@@ -307,27 +307,17 @@ def fetch_and_save(*, term, subject, root, delay):
 
 
 def cmd_fetch(*, args, root):
-    with ThreadPoolExecutor(max_workers=args.workers) as executor:
-        futures = {}
-        for term, subject in itertools.product(args.terms, args.subjects):
-            key = executor.submit(fetch_and_save,
-                                  term=term,
-                                  subject=subject,
-                                  root=root,
-                                  delay=args.delay)
+    for term, subject in itertools.product(args.terms, args.subjects):
+        ident = f'{term}/{subject}'
+        try:
+            data = fetch_and_save(term=term,
+                           subject=subject,
+                           root=root,
+                           delay=args.delay)
 
-            futures[key] = f'{term}/{subject}'
-
-        for future in as_completed(futures):
-            ident = futures[future]
-
-            # noinspection PyBroadException
-            try:
-                data = future.result()
-            except Exception as e:
-                print(f'{ident} generated an exception: {e}')
-            else:
-                print(f'{ident} page is {len(data)} bytes')
+            print(f'{ident} page is {len(data)} bytes')
+        except Exception as e:
+            print(f'{ident} generated an exception: {e}')
 
 
 def clean_and_save(*, path: Path):
