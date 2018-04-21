@@ -424,6 +424,9 @@ def cmd_extract(*, args, root):
 def cmd_bundle(*, args, root):
     terms = {}
 
+    terms_dir = root / 'terms'
+    terms_dir.mkdir(exist_ok=True)
+
     files_dir = root / 'courses'
     for term in [d for d in files_dir.glob('*') if d.is_dir()]:
         subjects = {}
@@ -440,12 +443,12 @@ def cmd_bundle(*, args, root):
 
             subjects[subject.name] = courses
 
-        terms[term.name] = subjects
-
-    with open(root / 'all.json', 'w') as outfile:
-        print(f'saving all-term bundle')
-        json.dump(terms, outfile, indent='\t', sort_keys=True)
-        outfile.write('\n')
+        # terms[term.name] = subjects
+        with open(terms_dir / f'{term.name}.json', 'w') as outfile:
+            print(f'saving {term.name} bundle')
+            all_courses = [course_set for by_subject in subjects.values() for course_set in by_subject]
+            json.dump(all_courses, outfile, indent='\t', sort_keys=True, ensure_ascii=False)
+            outfile.write('\n')
 
 
 def main():
