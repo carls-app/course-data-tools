@@ -6,16 +6,71 @@
 from bs4 import BeautifulSoup
 from argparse import ArgumentParser
 from urllib.parse import parse_qs
+from collections import OrderedDict
 from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor, as_completed
 from multiprocessing import cpu_count
 import itertools
 import requests
+import os
 import re
 import sys
 import time
 import json
 from pathlib import Path
+import hashlib
 import datetime
+
+
+def json_folder_map(folder, name='index', dry_run=False):
+    output = {
+        'files': [],
+        'type': 'courses',
+    }
+
+    for file in os.scandir(folder):
+        filename = file.name
+        if filename.startswith('.'):
+            continue
+
+        filepath = folder / filename
+        with open(filepath, 'rb') as infile:
+            basename, extension = os.path.splitext(filename)
+            extension = extension[1:]  # splitext's extension includes the preceding dot
+            year = basename[0:2]
+            year = '19' + year if year == '99' else '20' + year
+            year = int(year)
+            semester = basename[2:4]
+            if semester == 'FA':
+                semester = 1
+            elif semester == 'WI':
+                semester = 2
+            elif semester == 'SP':
+                semester = 3
+
+            info = {
+                'path': f'terms/{filename}',
+                'hash': hashlib.sha256(infile.read()).hexdigest(),
+                'year': year,  # eg: 19943.json -> 1994
+                'term': int(str(year) + str(semester)),  # eg: 19943.json -> 19943
+                'semester': basename[2:4],
+                'type': extension,
+            }
+
+            output['files'].append(OrderedDict(sorted(info.items())))
+
+    output['files'] = sorted(output['files'], key=lambda item: item['path'])
+    output = OrderedDict(sorted(output.items()))
+
+    print('Hashed files')
+    if dry_run:
+        return
+
+    index_path = folder / '..' / f'{name}.json'
+    with open(index_path, 'w') as outfile:
+        json.dump(output, outfile, indent='\t', ensure_ascii=False)
+        outfile.write('\n')
+
+    print('Wrote', index_path)
 
 
 def discover_terms(*, first, last):
@@ -421,6 +476,27 @@ def cmd_extract(*, args, root):
                 print(f'completed {ident}')
 
 
+def do_bundle(term, terms_dir):
+    subjects = []
+
+    for subject in [d for d in term.glob('*') if d.is_dir()]:
+        print(f'bundling term "{term.name}", subject "{subject.name}"', file=sys.stderr)
+
+        courses = []
+        for file in subject.glob('*.json'):
+            with open(file, 'r') as infile:
+                courses.append(json.load(infile))
+
+        subjects.append(courses)
+
+    # terms[term.name] = subjects
+    with open(terms_dir / f'{term.name}.json', 'w') as outfile:
+        print(f'saving {term.name} bundle')
+        all_courses = [courses for courses in subjects]
+        json.dump(all_courses, outfile, indent='\t', sort_keys=True, ensure_ascii=False)
+        outfile.write('\n')
+
+
 def cmd_bundle(*, args, root):
     terms = {}
 
@@ -428,27 +504,34 @@ def cmd_bundle(*, args, root):
     terms_dir.mkdir(exist_ok=True)
 
     files_dir = root / 'courses'
-    for term in [d for d in files_dir.glob('*') if d.is_dir()]:
-        subjects = {}
 
-        for subject in [d for d in term.glob('*') if d.is_dir()]:
-            print(f'bundling term "{term.name}", subject "{subject.name}"', file=sys.stderr)
+    if args.debug:
+        for term in [d for d in files_dir.glob('*') if d.is_dir()]:
+            do_bundle(term=term, terms_dir=terms_dir)
 
-            filenames = [file for file in subject.glob('*.json')]
+        json_folder_map(folder=terms_dir, name='info')
 
-            courses = []
-            for file in filenames:
-                with open(file, 'r') as infile:
-                    courses.append(json.load(infile))
+        return
 
-            subjects[subject.name] = courses
+    with ProcessPoolExecutor(max_workers=args.workers) as executor:
+        futures = {}
 
-        # terms[term.name] = subjects
-        with open(terms_dir / f'{term.name}.json', 'w') as outfile:
-            print(f'saving {term.name} bundle')
-            all_courses = [course_set for by_subject in subjects.values() for course_set in by_subject]
-            json.dump(all_courses, outfile, indent='\t', sort_keys=True, ensure_ascii=False)
-            outfile.write('\n')
+        for term in [d for d in files_dir.glob('*') if d.is_dir()]:
+            key = executor.submit(do_bundle, term=term, terms_dir=terms_dir)
+            futures[key] = term.name
+
+        for future in as_completed(futures):
+            ident = futures[future]
+
+            # noinspection PyBroadException
+            try:
+                future.result()
+            except Exception as e:
+                print(f'{ident} generated an exception: {e}')
+            else:
+                print(f'completed {ident}')
+
+    json_folder_map(folder=terms_dir, name='info')
 
 
 def main():
