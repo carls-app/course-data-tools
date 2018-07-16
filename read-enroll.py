@@ -111,58 +111,27 @@ def discover_terms(*, first, last):
 
 
 def fetch_academic_terms():
-    """ Returns list of academic terms that user can choose from. Item in list
-    will be passed to function that returns html link with term info provided.
-    Example: 'term=18WI' in 'https://apps.carleton.edu/campus/registrar/schedule/enroll/?term=18WI&subject=CS'
-    """
-
-    # Homepage showing listings of academic terms and course subjects
+    """Returns a list of academic terms that user can choose from."""
     html_enroll = requests.get('https://apps.carleton.edu/campus/registrar/schedule/enroll/').text
     soup = BeautifulSoup(html_enroll, 'html5lib')
-
-    # Tag object containing list of academic terms
-    term_summary = soup.find("select", id="termElement")
-
-    # Each term name such as "Winter 2018" has tag "option"
-    terms = term_summary.find_all("option")
-
-    # We want the value attribute; example: <option value="18WI">
-    # Create list with all value attributes; this will be list of terms available to choose from
-    return [opt['value'] for opt in terms]
+    opts = soup.select_one("#termElement").find_all("option")
+    return [opt['value'] for opt in opts]
 
 
 def fetch_subjects():
-    """ Returns list of course subjects. Each will be passed to function that returns
-    appropriate html link which contains specific course information for the subject
-    Example: 'subject=CS' in 'https://apps.carleton.edu/campus/registrar/schedule/enroll/?term=18WI&subject=CS'
-    """
+    """Returns a list of course subjects."""
     html_enroll = requests.get('https://apps.carleton.edu/campus/registrar/schedule/enroll/').text
-    soup2 = BeautifulSoup(html_enroll, 'html5lib')
+    soup = BeautifulSoup(html_enroll, 'html5lib')
 
-    # Tag object containing list of subjects
-    subject_summary = soup2.find("select", id="subjectElement")
+    subject_summary = soup.select_one("#subjectElement")
 
-    # Each subject within summary has tag "option"
-    # Create a list with subjects, excluding 'Selected' tag (1st item)
+    # Create a list with subjects, excluding 'Selected' tag (first item)
     subjects = subject_summary.find_all("option")[1:]
 
-    # Only get the associated text, excluding the tag itself and add them to list
-    subj_list = []
-    for item in subjects:
-        subj_list.append(item.get_text())
-
-    # print subj_list
-
-    # Each item in subj_list is currently in the form: 'Computer Science (CS)'
-    # We only want the abbreviation in the parentheses so that we can use this in the html link
-    # We use regular expressions to achieve this.
-    subj_abbrev = []
-    for i in subj_list:
-        subj_abbrev.append(re.search(r'\((.*?)\)', i).group(1))
-
-    # print subj_abbrev
-
-    return subj_abbrev
+    # Each item is currently in the form: 'Computer Science (CS)'. We only
+    # want the abbreviation in the parentheses.
+    abbr = re.compile(r'\((.*?)\)')
+    return [abbr.search(item.get_text()).group(1) for item in subjects]
 
 
 def process_course(course, term):
