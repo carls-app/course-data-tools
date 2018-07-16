@@ -497,7 +497,7 @@ def do_bundle(term, terms_dir):
     # terms[term.name] = subjects
     with open(terms_dir / f'{term.name}.json', 'w') as outfile:
         print(f'saving {term.name} bundle')
-        all_courses = [courses for courses in subjects]
+        all_courses = [courses_set for subject in subjects for courses_set in subject]
         json.dump(all_courses, outfile, indent='\t', sort_keys=True, ensure_ascii=False)
         outfile.write('\n')
 
