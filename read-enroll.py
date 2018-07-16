@@ -174,6 +174,15 @@ def process_course(course, term):
     department, number = course_num.get_text().strip().split(' ')
     number, section = number.split('.')
 
+    course_type = 'Course'
+    if number[-1] == 'L':
+        course_type = 'Lab'
+    elif number[-1] == 'J':
+        course_type = 'Juried'
+    elif number[-1] == 'F':
+        course_type = 'FLAC'
+    elif number[-1] == 'S':
+        course_type = 'St. Olaf'
 
     # Finds title attribute within each course
     # Only takes the actual name of the course, which is next to the coursenum attribute
@@ -317,6 +326,7 @@ def process_course(course, term):
         'status': status,
         'synonym': synonym,
         'tags': tags,
+        'type': course_type,
         'year': year,
         'semester': semester,
     }
