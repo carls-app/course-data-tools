@@ -442,10 +442,9 @@ def extract_and_save(*, html_file: Path, out_dir: Path, term: str):
     with open(html_file, 'r') as infile:
         html = infile.read()
 
-    out_dir.mkdir(parents=True, exist_ok=True)
-
     for course in extract_courses(html=html, term=term):
-        with open(out_dir / f'{course["id"]}.json', 'w') as outfile:
+        filename = out_dir / f'{course["number"]}.{course["section"]}.json'
+        with open(filename, 'w') as outfile:
             json.dump(course, outfile, indent='\t', sort_keys=True, ensure_ascii=False)
             outfile.write('\n')
 
@@ -466,6 +465,7 @@ def cmd_extract(*, args, root):
                 continue
 
             out_dir = files_dir / term / subject
+            out_dir.mkdir(parents=True, exist_ok=True)
 
             print(f'{subject_dir.parent.name}/{subject_dir.name}')
             extract_and_save(html_file=html_file, out_dir=out_dir, term=term)
@@ -483,6 +483,7 @@ def cmd_extract(*, args, root):
                 continue
 
             out_dir = files_dir / term / subject
+            out_dir.mkdir(parents=True, exist_ok=True)
 
             key = executor.submit(extract_and_save, html_file=html_file, out_dir=out_dir, term=term)
             futures[key] = f'{subject_dir.parent.name}/{subject_dir.name}'
