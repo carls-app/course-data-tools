@@ -73,33 +73,41 @@ def json_folder_map(folder, name='index', dry_run=False):
     print('Wrote', index_path)
 
 
+def expand_term(term):
+    year, sem = term[:2], term[2:]
+    year = int(f'20{year}') if year < '90' else int(f'19{year}')
+    return year, sem
+
+
 def discover_terms(*, first, last):
     term_names = ['FA', 'WI', 'SP']
 
-    first = first if first else ''
-    last = last if last else ''
-
-    first_year, first_sem = first[:2], first[2:]
-    last_year, last_sem = last[:2], last[2:]
+    first_year = first if first else ''
+    first_sem = None
+    last_year = last if last else ''
+    last_sem = None
 
     if first_year:
-        first_year = f'20{first_year}' if first_year < '90' else f'19{first_year}'
+        first_year, first_sem = expand_term(first_year)
     if last_year:
-        last_year = f'20{last_year}' if last_year < '90' else f'19{last_year}'
+        last_year, last_sem = expand_term(last_year)
 
-    first_year = int(first_year) if first_year else datetime.date.today().year - 4
-    last_year = int(last_year) if last_year else datetime.date.today().year
+    first_year = first_year if first_year else datetime.date.today().year - 4
+    last_year = last_year if last_year else datetime.date.today().year
 
     for y in range(first_year, last_year + 1):
         terms = term_names
+        year = str(y)[2:]
 
         if y == first_year and first_sem:
             terms = term_names[term_names.index(first_sem):]
+            if first_year == last_year and last_sem:
+                terms = term_names[term_names.index(first_sem):term_names.index(last_sem) + 1]
         elif y == last_year and last_sem:
-            terms = term_names[:term_names.index(last_sem)]
+            terms = term_names[:term_names.index(last_sem) + 1]
 
         for t in terms:
-            yield f'{str(y)[2:]}{t}'
+            yield f'{year}{t}'
 
 
 def fetch_academic_terms():
