@@ -442,11 +442,23 @@ def extract_and_save(*, html_file: Path, out_dir: Path, term: str):
     with open(html_file, 'r') as infile:
         html = infile.read()
 
+    seen = set()
     for course in extract_courses(html=html, term=term):
         filename = out_dir / f'{course["number"]}.{course["section"]}.json'
         with open(filename, 'w') as outfile:
             json.dump(course, outfile, indent='\t', sort_keys=True, ensure_ascii=False)
             outfile.write('\n')
+            seen.add(filename)
+
+    # because we run per term, then per subject, we won't delete things that
+    # aren't in the current run, but we will delete things that Carleton
+    # doesn't list anymore. so we run the deletion at the end of
+    # `extract_and_save`.
+    exists = {file for file in out_dir.glob('*.json')}
+    to_delete = exists - seen
+
+    for file in to_delete:
+        file.unlink()
 
 
 def cmd_extract(*, args, root):
