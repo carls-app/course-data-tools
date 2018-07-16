@@ -224,8 +224,7 @@ def process_course(course, term):
             'name': code.get_text().strip(),
             'code': parse_qs(code.get('href')).get('other_code[]', []),
         } for code in course.select('.codes.gov_codes a')]
-        tags = [{**tag, 'code': tag['code'][0] if len(tag['code']) else None}
-                for tag in tags]
+        tags = [tag['code'][0] if len(tag['code']) else tag['name'] for tag in tags]
     else:
         tags = []
 
@@ -235,8 +234,7 @@ def process_course(course, term):
             'code': parse_qs(code.get('href')).get('requirements[]', [])
                         or parse_qs(code.get('href')).get('overlays[]', []),
         } for code in course.select('.codes.overlays a')]
-        requirements = [{**req, 'code': req['code'][0] if len(req['code']) else None}
-                        for req in requirements]
+        requirements = [req['code'][0] if len(req['code']) else req['name'] for req in requirements]
     else:
         requirements = []
 
