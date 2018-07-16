@@ -165,8 +165,10 @@ def fetch_subjects():
     return subj_abbrev
 
 
-def process_course(course):
+def process_course(course, term):
     course_num = course.select_one(".coursenum")
+
+    year, semester = expand_term(term)
 
     # Split apart the deptnum
     department, number = course_num.get_text().strip().split(' ')
@@ -314,6 +316,8 @@ def process_course(course):
         'status': status,
         'synonym': synonym,
         'tags': tags,
+        'year': year,
+        'semester': semester,
     }
 
 
@@ -349,7 +353,7 @@ def fetch_subject_for_term(*, term, subject):
     return clean_html(html)
 
 
-def extract_courses(*, html):
+def extract_courses(*, html, term):
     """ Returns dict object with course number, course name, and start/end times for each course
     Finds course info based on the academic term and subject chosen (in this case, Winter 2018)
     """
@@ -359,7 +363,7 @@ def extract_courses(*, html):
     exact_courses_list = soup.select_one('#enrollModule .courses')
     courses = exact_courses_list.select('.course') if exact_courses_list else []
     for course in courses:
-        yield process_course(course)
+        yield process_course(course, term)
 
 
 def fetch_and_save(*, term, subject, root, delay):
@@ -423,13 +427,13 @@ def cmd_clean(*, args, root):
                 print(f'completed {ident}')
 
 
-def extract_and_save(*, html_file: Path, out_dir: Path):
+def extract_and_save(*, html_file: Path, out_dir: Path, term: str):
     with open(html_file, 'r') as infile:
         html = infile.read()
 
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    for course in extract_courses(html=html):
+    for course in extract_courses(html=html, term=term):
         with open(out_dir / f'{course["id"]}.json', 'w') as outfile:
             json.dump(course, outfile, indent='\t', sort_keys=True, ensure_ascii=False)
             outfile.write('\n')
@@ -453,7 +457,7 @@ def cmd_extract(*, args, root):
             out_dir = files_dir / term / subject
 
             print(f'{subject_dir.parent.name}/{subject_dir.name}')
-            extract_and_save(html_file=html_file, out_dir=out_dir)
+            extract_and_save(html_file=html_file, out_dir=out_dir, term=term)
 
         return
 
@@ -464,14 +468,12 @@ def cmd_extract(*, args, root):
 
             term = subject_dir.parent.name
             subject = subject_dir.name
-
             if term not in args.terms:
                 continue
 
             out_dir = files_dir / term / subject
 
-            key = executor.submit(extract_and_save, html_file=html_file, out_dir=out_dir)
-
+            key = executor.submit(extract_and_save, html_file=html_file, out_dir=out_dir, term=term)
             futures[key] = f'{subject_dir.parent.name}/{subject_dir.name}'
 
         for future in as_completed(futures):
