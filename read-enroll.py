@@ -205,6 +205,8 @@ def process_course(course):
 
     # Extract the course status
     status = course.select_one('.statusName').get_text().strip().strip(':')
+    if not status:
+        status = None
 
     if course.select_one(".statusName").next_sibling:
         status_text = str(course.select_one(".statusName").next_sibling).strip()
