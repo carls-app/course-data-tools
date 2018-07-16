@@ -278,7 +278,7 @@ def process_course(course, term):
         offerings = None
 
     return {
-        'id': f'{department} {number}.{section}',
+        'id': f'{year}{semester} {department} {number}.{section}',
         'title': title,
         'department': department,
         'number': number,
