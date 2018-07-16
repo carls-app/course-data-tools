@@ -140,7 +140,7 @@ def process_course(course, term):
     year, semester = expand_term(term)
 
     # Split apart the deptnum
-    department, number = course_num.get_text().strip().split(' ')
+    subject, number = course_num.get_text().strip().split(' ')
     number, section = number.split('.')
 
     course_type = 'Course'
@@ -278,9 +278,9 @@ def process_course(course, term):
         offerings = None
 
     return {
-        'id': f'{year}{semester} {department} {number}.{section}',
+        'id': f'{year}{semester} {subject} {number}.{section}',
         'title': title,
-        'department': department,
+        'subject': subject,
         'number': number,
         'section': section,
         'instructors': instructors,
