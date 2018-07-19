@@ -113,7 +113,7 @@ def discover_terms(*, first, last):
 def fetch_academic_terms():
     """Returns a list of academic terms that user can choose from."""
     html_enroll = requests.get('https://apps.carleton.edu/campus/registrar/schedule/enroll/').text
-    soup = BeautifulSoup(html_enroll, 'html5lib')
+    soup = BeautifulSoup(html_enroll, 'lxml')
     opts = soup.select_one("#termElement").find_all("option")
     return [opt['value'] for opt in opts]
 
@@ -121,7 +121,7 @@ def fetch_academic_terms():
 def fetch_subjects():
     """Returns a list of course subjects."""
     html_enroll = requests.get('https://apps.carleton.edu/campus/registrar/schedule/enroll/').text
-    soup = BeautifulSoup(html_enroll, 'html5lib')
+    soup = BeautifulSoup(html_enroll, 'lxml')
 
     subject_summary = soup.select_one("#subjectElement")
 
@@ -304,7 +304,7 @@ def process_course(course, term):
 
 def clean_html(html):
     # Clean up the returned HTML to optimize storage size
-    soup = BeautifulSoup(html, 'html5lib')
+    soup = BeautifulSoup(html, 'lxml')
 
     # only save the enroll data
     soup = soup.select_one('#enrollModule')
@@ -338,7 +338,7 @@ def extract_courses(*, html, term):
     """ Returns dict object with course number, course name, and start/end times for each course
     Finds course info based on the academic term and subject chosen (in this case, Winter 2018)
     """
-    soup = BeautifulSoup(html, 'html5lib')
+    soup = BeautifulSoup(html, 'lxml')
 
     # Creates list of all items with course as class attribute, excluding related courses
     exact_courses_list = soup.select_one('#enrollModule .courses')
