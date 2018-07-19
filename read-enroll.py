@@ -279,25 +279,25 @@ def process_course(course, term):
 
     return {
         'id': f'{year}{semester} {subject} {number}.{section}',
-        'title': title,
-        'subject': subject,
-        'number': number,
-        'section': section,
-        'instructors': instructors,
-        'summary': summary,
-        'prerequisites': prereq,
         'comments': comments,
         'credits': credit_count,
+        'instructors': instructors,
+        'number': number,
         'offerings': offerings,
+        'prerequisites': prereq,
         'requirements': requirements,
         'scnc': scnc,
+        'section': section,
+        'semester': semester,
         'size': size,
         'status': status,
+        'subject': subject,
+        'summary': summary,
         'synonym': synonym,
         'tags': tags,
+        'title': title,
         'type': course_type,
         'year': year,
-        'semester': semester,
     }
 
 
