@@ -15,7 +15,9 @@ function terms() {
 # -n1 to only pass one argument from stdin to the process
 # -P2 to run 2 concurrent fetch processes
 terms | xargs -t -n1 -P2 -- python3 ../read-enroll.py --dest ./ fetch
-terms | xargs -t -n1 -P2 -- python3 ../read-enroll.py --dest ./ extract
+
+# extract the data in more-parallel fashion than we dare fetch it
+python3 ../read-enroll.py --dest ./ extract --first-term 99FA
 
 git add .
 git commit -m "course data update $(date)" || (echo "No updates found." && exit 0)
