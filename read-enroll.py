@@ -161,6 +161,7 @@ def process_course(course, term):
     # Find the teachers
     if course.select(".faculty"):
         instructors = [' '.join(inst.get_text().strip().split()) for inst in course.select(".faculty a")]
+        instructors = [name for name in instructors if name]
     else:
         instructors = []
 
